@@ -1,0 +1,6 @@
+./build
+./bin
+./test/build
+./tmp
+./log
+./vscode
