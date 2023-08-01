@@ -2,33 +2,28 @@
  * @file tensor.hpp
  * @brief 张量
  * @date 2023-07-31
- * 
+ *
  * @copyright Copyright (c) 2023
- * 
+ *
  */
 
 #ifndef KUIPER_COURSE_INCLUDE_TENSOR_HPP_
 #define KUIPER_COURSE_INCLUDE_TENSOR_HPP_
+#include <armadillo>
 #include <memory>
 #include <vector>
-#include <armadillo>
 
 namespace kuiper_infer {
 
-template<typename T>
-class Tensor {
+template <typename T> class Tensor {};
 
-};
-
-template<>
-class Tensor<uint8_t> {
+template <> class Tensor<uint8_t> {
   // 待实现，量化一个张量
 };
 
-template<>
-class Tensor<float> {
+template <> class Tensor<float> {
   // 元素都是float
- public:
+public:
   explicit Tensor() = default;
 
   explicit Tensor(uint32_t channels, uint32_t rows, uint32_t cols);
@@ -49,7 +44,7 @@ class Tensor<float> {
 
   bool empty() const;
 
-  float index(uint32_t offset) const;
+  float &index(uint32_t offset);
 
   std::vector<uint32_t> shapes() const;
 
@@ -79,9 +74,9 @@ class Tensor<float> {
 
   void Flatten();
 
- private:
+private:
   std::vector<uint32_t> raw_shapes_;
   arma::fcube data_;
 };
-}
-#endif //KUIPER_COURSE_INCLUDE_TENSOR_HPP_
+} // namespace kuiper_infer
+#endif // KUIPER_COURSE_INCLUDE_TENSOR_HPP_

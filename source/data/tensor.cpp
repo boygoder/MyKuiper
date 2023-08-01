@@ -42,17 +42,18 @@ uint32_t Tensor<float>::size() const {
 }
 
 void Tensor<float>::set_data(const arma::fcube &data) {
-  CHECK(data.n_rows == this->data_.n_rows) << data.n_rows << " != " << this->data_.n_rows;
-  CHECK(data.n_cols == this->data_.n_cols) << data.n_cols << " != " << this->data_.n_cols;
-  CHECK(data.n_slices == this->data_.n_slices) << data.n_slices << " != " << this->data_.n_slices;
+  CHECK(data.n_rows == this->data_.n_rows)
+      << data.n_rows << " != " << this->data_.n_rows;
+  CHECK(data.n_cols == this->data_.n_cols)
+      << data.n_cols << " != " << this->data_.n_cols;
+  CHECK(data.n_slices == this->data_.n_slices)
+      << data.n_slices << " != " << this->data_.n_slices;
   this->data_ = data;
 }
 
-bool Tensor<float>::empty() const {
-  return this->data_.empty();
-}
+bool Tensor<float>::empty() const { return this->data_.empty(); }
 
-float Tensor<float>::index(uint32_t offset) const {
+float &Tensor<float>::index(uint32_t offset) {
   CHECK(offset < this->data_.size());
   return this->data_.at(offset);
 }
@@ -62,13 +63,9 @@ std::vector<uint32_t> Tensor<float>::shapes() const {
   return {this->channels(), this->rows(), this->cols()};
 }
 
-arma::fcube &Tensor<float>::data() {
-  return this->data_;
-}
+arma::fcube &Tensor<float>::data() { return this->data_; }
 
-const arma::fcube &Tensor<float>::data() const {
-  return this->data_;
-}
+const arma::fcube &Tensor<float>::data() const { return this->data_; }
 
 arma::fmat &Tensor<float>::at(uint32_t channel) {
   CHECK_LT(channel, this->channels());
@@ -94,19 +91,20 @@ float &Tensor<float>::at(uint32_t channel, uint32_t row, uint32_t col) {
   return this->data_.at(row, col, channel);
 }
 
-void Tensor<float>::Padding(const std::vector<uint32_t> &pads, float padding_value) {
+void Tensor<float>::Padding(const std::vector<uint32_t> &pads,
+                            float padding_value) {
   CHECK(!this->data_.empty());
   CHECK_EQ(pads.size(), 4);
-  uint32_t pad_rows1 = pads.at(0);  // up
-  uint32_t pad_rows2 = pads.at(1);  // bottom
-  uint32_t pad_cols1 = pads.at(2);  // left
-  uint32_t pad_cols2 = pads.at(3);  // right
+  uint32_t pad_rows1 = pads.at(0); // up
+  uint32_t pad_rows2 = pads.at(1); // bottom
+  uint32_t pad_cols1 = pads.at(2); // left
+  uint32_t pad_cols2 = pads.at(3); // right
 
   //向四个方向扩展
-  this->data_.insert_rows(0,pad_rows1);
-  this->data_.insert_rows(this->data_.n_rows,pad_rows2);
-  this->data_.insert_cols(0,pad_cols1);
-  this->data_.insert_cols(this->data_.n_cols,pad_cols2);
+  this->data_.insert_rows(0, pad_rows1);
+  this->data_.insert_rows(this->data_.n_rows, pad_rows2);
+  this->data_.insert_cols(0, pad_cols1);
+  this->data_.insert_cols(this->data_.n_cols, pad_cols2);
   //默认插入0，如何插入padding_value;
 }
 
@@ -125,11 +123,10 @@ void Tensor<float>::Fill(const std::vector<float> &values) {
   const uint32_t planes = rows * cols;
   const uint32_t channels = this->data_.n_slices;
 
-
-  for(int i = 0; i < channels; ++i) {
+  for (int i = 0; i < channels; ++i) {
     auto &channel_data = this->data_.slice(i);
-    auto channel_data_t = arma::fmat(values.data() + i*planes,rows,cols);
-    //fmat按列存储，我们想按行读取。
+    auto channel_data_t = arma::fmat(values.data() + i * planes, rows, cols);
+    // fmat按列存储，我们想按行读取。
     channel_data = channel_data_t.t();
   }
 }
@@ -175,4 +172,4 @@ void Tensor<float>::Ones() {
   CHECK(!this->data_.empty());
   this->data_.fill(1.);
 }
-}
+} // namespace kuiper_infer

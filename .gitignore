@@ -1,6 +1,6 @@
-./build
-./bin
-./test/build
-./tmp
-./log
-./vscode
+/build
+/bin
+/test/build
+/tmp
+/log
+/.vscode
