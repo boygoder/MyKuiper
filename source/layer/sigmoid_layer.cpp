@@ -21,7 +21,7 @@ void SigmoidLayer::Forwards(
     std::vector<std::shared_ptr<Tensor<float>>> &outputs) {
   CHECK(this->op_ != nullptr);
   CHECK(this->op_->op_type_ == OpType::kOperatorSigmoid);
-
+  CHECK(!inputs.empty());
   const u_int32_t batch_size = inputs.size();
   for (int i = 0; i < batch_size; ++i) {
     CHECK(!inputs.at(i)->empty());

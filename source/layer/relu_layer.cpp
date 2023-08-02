@@ -16,6 +16,7 @@ ReluLayer::ReluLayer(const std::shared_ptr<Operator> &op) : Layer("Relu") {
   CHECK(relu_op != nullptr) << "Relu operator is empty";
   // 一个op实例和一个layer 一一对应 这里relu op对一个relu layer
   // 从shared_ptr获取的裸指针构造出unique_ptr
+
   this->op_ = std::make_unique<ReluOperator>(relu_op->get_thresh());
 }
 
@@ -26,7 +27,7 @@ void ReluLayer::Forwards(
 {
   CHECK(this->op_ != nullptr);
   CHECK(this->op_->op_type_ == OpType::kOperatorRelu);
-
+  CHECK(!inputs.empty());
   const uint32_t batch_size = inputs.size();
   //一批x，放在vec当中，理解为batchsize数量的tensor，需要进行relu操作
   for (int i = 0; i < batch_size; ++i) {

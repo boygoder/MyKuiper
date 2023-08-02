@@ -18,5 +18,3 @@ private:
 };
 } // namespace kuiper_infer
 #endif // KUIPER_COURSE_INCLUDE_OPS_RELU_OP_HPP_
-
-#
