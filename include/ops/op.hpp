@@ -4,6 +4,7 @@ namespace kuiper_infer {
 enum class OpType {
   kOperatorUnknown = -1,
   kOperatorRelu = 0,
+  kOperatorSigmoid = 1,
 };
 
 class Operator {

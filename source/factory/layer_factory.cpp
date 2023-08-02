@@ -29,7 +29,7 @@ LayerRegisterer::CreateLayer(const std::shared_ptr<Operator> &op) {
 }
 
 LayerRegisterer::CreateRegistry &LayerRegisterer::Registry() {
-  //单例模式的关键，只初始化一次的注册表
+  //单例模式的关键，static只初始化一次的注册表
   static CreateRegistry *kRegistry = new CreateRegistry();
   //检查是否初始化成功
   CHECK(kRegistry != nullptr) << "Global layer register init failed!";

@@ -27,15 +27,12 @@ void ReluLayer::Forwards(
   CHECK(this->op_ != nullptr);
   CHECK(this->op_->op_type_ == OpType::kOperatorRelu);
 
-  const uint32_t batch_size =
-      inputs
-          .size(); //一批x，放在vec当中，理解为batchsize数量的tensor，需要进行relu操作
+  const uint32_t batch_size = inputs.size();
+  //一批x，放在vec当中，理解为batchsize数量的tensor，需要进行relu操作
   for (int i = 0; i < batch_size; ++i) {
-
     CHECK(!inputs.at(i)->empty());
-    const std::shared_ptr<Tensor<float>> &input_data =
-        inputs.at(i); //取出批次当中的一个张量
-
+    //取出批次当中的一个张量
+    const std::shared_ptr<Tensor<float>> &input_data = inputs.at(i);
     //使用arma自带的transform,对张量中的每一个元素进行运算，进行relu运算
     input_data->data().transform([&](float value) {
       // 对张量中的每一个元素进行运算
@@ -54,6 +51,7 @@ void ReluLayer::Forwards(
     outputs.push_back(input_data);
   }
 }
+
 //创建该层的函数，用于工厂模式
 std::shared_ptr<Layer>
 ReluLayer::CreateInstance(const std::shared_ptr<Operator> &op) {
@@ -61,7 +59,9 @@ ReluLayer::CreateInstance(const std::shared_ptr<Operator> &op) {
   std::shared_ptr<Layer> relu_layer = std::make_shared<ReluLayer>(op);
   return relu_layer;
 }
+
 //注册函数，算子：创建函数
 LayerRegistererWrapper kReluLayer(OpType::kOperatorRelu,
                                   ReluLayer::CreateInstance);
+
 } // namespace kuiper_infer

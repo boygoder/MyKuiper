@@ -15,7 +15,7 @@ public:
   void Forwards(const std::vector<std::shared_ptr<Tensor<float>>> &inputs,
                 std::vector<std::shared_ptr<Tensor<float>>> &outputs) override;
 
-  // 下节的内容，不用管
+  // 创建Layer实例
   static std::shared_ptr<Layer>
   CreateInstance(const std::shared_ptr<Operator> &op);
 

@@ -10,7 +10,6 @@ TEST(test_layer, forward_relu1) {
   // 初始化一个relu operator 并设置属性
   std::shared_ptr<Operator> relu_op = std::make_shared<ReluOperator>(thresh);
 
-  Tensor<float> in(1, 1, 3);
   // 有三个值的一个tensor<float>
   std::shared_ptr<Tensor<float>> input =
       std::make_shared<Tensor<float>>(1, 1, 3);
@@ -20,9 +19,9 @@ TEST(test_layer, forward_relu1) {
   // 主要第一个算子，经典又简单，我们这里开始！
 
   std::vector<std::shared_ptr<Tensor<float>>> inputs; //作为一个批次去处理
-
-  std::vector<std::shared_ptr<Tensor<float>>> outputs; //放结果
   inputs.push_back(input);
+  std::vector<std::shared_ptr<Tensor<float>>> outputs; //放结果
+
   ReluLayer layer(relu_op);
 
   layer.Forwards(inputs, outputs);

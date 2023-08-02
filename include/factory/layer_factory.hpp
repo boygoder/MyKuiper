@@ -17,7 +17,8 @@ public:
   //将op_type和对应的构建函数，加入注册表
   static void RegisterCreator(OpType op_type, const Creator &creator);
   //根据算子类型，查看注册表，构造对应的layer
-  static std::shared_ptr<Layer> CreateLayer(const std::shared_ptr<Operator> &op);
+  static std::shared_ptr<Layer>
+  CreateLayer(const std::shared_ptr<Operator> &op);
   //创建注册表
   static CreateRegistry &Registry();
 };
