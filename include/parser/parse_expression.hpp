@@ -44,7 +44,7 @@ public:
   //参数表示：是否需要重新序列化
   void Tokenizer(bool need_retoken = false);
   //根据tokens_构建抽象语法树,调用Generate_函数递归构建
-  std::shared_ptr<TokenNode> Generate();
+  std::vector<std::shared_ptr<TokenNode>> Generate();
 
   const std::vector<Token> &tokens() const;
 

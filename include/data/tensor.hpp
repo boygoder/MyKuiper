@@ -28,7 +28,16 @@ public:
 
   explicit Tensor(uint32_t channels, uint32_t rows, uint32_t cols);
 
+  explicit Tensor(const std::vector<uint32_t> &shapes);
+
+  static std::shared_ptr<Tensor<float>> Create(uint32_t channels, uint32_t rows,
+                                               uint32_t cols);
+
   Tensor(const Tensor &tensor);
+
+  Tensor(Tensor &&tensor) noexcept;
+
+  Tensor<float> &operator=(Tensor &&tensor) noexcept;
 
   Tensor<float> &operator=(const Tensor &tensor);
 
@@ -44,9 +53,13 @@ public:
 
   bool empty() const;
 
+  float index(uint32_t offset) const;
+
   float &index(uint32_t offset);
 
   std::vector<uint32_t> shapes() const;
+
+  const std::vector<uint32_t> &raw_shapes() const;
 
   arma::fcube &data();
 
@@ -72,11 +85,36 @@ public:
 
   void Show();
 
+  void ReRawshape(const std::vector<uint32_t> &shapes);
+
+  void ReRawView(const std::vector<uint32_t> &shapes);
+
+  static std::shared_ptr<Tensor<float>>
+  ElementAdd(const std::shared_ptr<Tensor<float>> &tensor1,
+             const std::shared_ptr<Tensor<float>> &tensor2);
+
+  static std::shared_ptr<Tensor<float>>
+  ElementMultiply(const std::shared_ptr<Tensor<float>> &tensor1,
+                  const std::shared_ptr<Tensor<float>> &tensor2);
+
+  static std::shared_ptr<Tensor<float>>
+  ElementDivision(const std::shared_ptr<Tensor<float>> &tensor1,
+                  const std::shared_ptr<Tensor<float>> &tensor2);
+
   void Flatten();
 
+  void Transform(const std::function<float(float)> &filter);
+
+  std::shared_ptr<Tensor> Clone();
+
+  const float *raw_ptr() const;
+
 private:
-  std::vector<uint32_t> raw_shapes_;
-  arma::fcube data_;
+  void ReView(const std::vector<uint32_t> &shapes);
+  std::vector<uint32_t>
+      raw_shapes_; //张量数据的实际尺寸大小,会省略channel或row为一的维度。
+  arma::fcube data_; //张量数据
 };
+using ftensor = Tensor<float>;
 } // namespace kuiper_infer
 #endif // KUIPER_COURSE_INCLUDE_TENSOR_HPP_

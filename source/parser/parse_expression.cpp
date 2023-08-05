@@ -139,6 +139,7 @@ std::shared_ptr<TokenNode> ExpressionParser::Generate_(int32_t &index) {
            current_token.token_type == TokenType::TokenAdd ||
            current_token.token_type == TokenType::TokenDiv) {
     std::shared_ptr<TokenNode> current_node = std::make_shared<TokenNode>();
+    //操作符的num_index都是TokenType取反
     current_node->num_index = -int(current_token.token_type);
     //操作符后紧跟左括号
     index += 1;
@@ -185,7 +186,7 @@ std::shared_ptr<TokenNode> ExpressionParser::Generate_(int32_t &index) {
   }
 }
 
-std::shared_ptr<TokenNode> ExpressionParser::Generate() {
+std::vector<std::shared_ptr<TokenNode>> ExpressionParser::Generate() {
 
   if (this->tokens_.empty()) {
     this->Tokenizer(true);
@@ -195,7 +196,9 @@ std::shared_ptr<TokenNode> ExpressionParser::Generate() {
   CHECK(root != nullptr);
   CHECK(index == tokens_.size() - 1);
 
-  return root;
+  std::vector<std::shared_ptr<TokenNode>> reverse_polish;
+  ReversePolish(root, reverse_polish);
+  return reverse_polish;
 }
 
 TokenNode::TokenNode(int32_t num_index, std::shared_ptr<TokenNode> left,
