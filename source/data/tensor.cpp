@@ -212,6 +212,10 @@ void Tensor<float>::Ones() {
   this->data_.fill(1.);
 }
 
+std::shared_ptr<Tensor<float>> Tensor<float>::Clone() {
+  return std::make_shared<Tensor>(*this);
+}
+
 std::shared_ptr<Tensor<float>>
 Tensor<float>::ElementAdd(const std::shared_ptr<Tensor<float>> &tensor1,
                           const std::shared_ptr<Tensor<float>> &tensor2) {
@@ -271,14 +275,14 @@ Tensor<float>::ElementMultiply(const std::shared_ptr<Tensor<float>> &tensor1,
 
 std::shared_ptr<Tensor<float>>
 Tensor<float>::ElementDivision(const std::shared_ptr<Tensor<float>> &tensor1,
-                const std::shared_ptr<Tensor<float>> &tensor2)
-{
+                               const std::shared_ptr<Tensor<float>> &tensor2) {
   CHECK(!tensor1->empty() && !tensor2->empty());
-  for(int channel = 0; channel < tensor2->channels(); ++channel) {
-    for(int row = 0; row < tensor2->rows(); ++row) {
-      for(int col = 0; col < tensor2->cols(); ++col) {
-        float data = tensor2->at(channel,row,col);
-        CHECK(fabs(data) > 1e-16) << "The divisor is less than 1e-16,almost zero.";
+  for (int channel = 0; channel < tensor2->channels(); ++channel) {
+    for (int row = 0; row < tensor2->rows(); ++row) {
+      for (int col = 0; col < tensor2->cols(); ++col) {
+        float data = tensor2->at(channel, row, col);
+        CHECK(fabs(data) > 1e-16)
+            << "The divisor is less than 1e-16,almost zero.";
       }
     }
   }
@@ -286,7 +290,8 @@ Tensor<float>::ElementDivision(const std::shared_ptr<Tensor<float>> &tensor1,
     std::shared_ptr<Tensor<float>> output_tensor =
         std::make_shared<Tensor<float>>(tensor1->channels(), tensor1->rows(),
                                         tensor1->cols());
-    // arma中，/表示element-wise division of an object by another object or a scalar
+    // arma中，/表示element-wise division of an object by another object or a
+    // scalar
     output_tensor->data_ = tensor1->data_ / tensor2->data_;
     return output_tensor;
   } else {
@@ -299,11 +304,9 @@ Tensor<float>::ElementDivision(const std::shared_ptr<Tensor<float>> &tensor1,
       LOG(FATAL) << "Tensors shape are not adapting";
     }
     std::shared_ptr<Tensor<float>> output_tensor =
-        std::make_shared<Tensor<float>>(tensor1->rows(),
-                                        tensor1->cols(),
+        std::make_shared<Tensor<float>>(tensor1->rows(), tensor1->cols(),
                                         tensor1->channels());
-    for(int c = 0; c < channels; ++c)
-    {
+    for (int c = 0; c < channels; ++c) {
       float scalar = tensor2->index(c);
       output_tensor->data_.slice(c) = tensor1->data_.slice(c) / scalar;
     }

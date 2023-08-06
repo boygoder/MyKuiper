@@ -22,15 +22,40 @@
 // 得到pnnx::graph,一个一个算子去初始化 runtimegraph
 // 得到pnnx::operators -->依次遍历
 // pnnx operator 遍历，初始化一个RuntimeOperator
-// 1.  得到pnnx operator的inputs，再根据这个inputs去初始化我们RuntimeOperator::runtime_operator->input_operands;
-// 2. 同理得到pnnxm operator的outputs去初始化RuntimeOperator::runtime_operator->output_operands;
+// 1.  得到pnnx
+// operator的inputs，再根据这个inputs去初始化我们RuntimeOperator::runtime_operator->input_operands;
+// 2. 同理得到pnnxm
+// operator的outputs去初始化RuntimeOperator::runtime_operator->output_operands;
 // 3. runtimeParameter 根据pnnx::param初始化;
 // 4, runtimeAttr根据pnnx::attr初始化;
 // 1.2.3.4的初始化过程中，
 // runtimeParameter，runtimeAttr，output_operands.inputs_operand放在一个runtime_operator里面
-// 5. 再把这个runtime_operator存放好,runtime_operator中包含输入数，输出数，层的参数和权重。
+// 5.
+// 再把这个runtime_operator存放好,runtime_operator中包含输入数，输出数，层的参数和权重。
 
 namespace kuiper_infer {
+
+class RuntimeGraphShape {
+public:
+  /**
+   * 如果图是第一次运行，则根据节点输入operand的形状准备好后续Layer计算中所需要的Tensor
+   * 如果图是第二次以上运行，则检查输入operand的形状和operand中张量的形状是否匹配
+   * @param operators 计算图中的计算节点
+   */
+  static void InitOperatorInputTensor(
+      const std::vector<std::shared_ptr<RuntimeOperator>> &operators);
+
+  /**
+   * 如果图是第一次运行，则根据节点输出operand的形状准备好后续Layer计算中所需要的Tensor
+   * 如果图是第二次以上运行，则检查输出operand的形状和operand中张量的形状是否匹配
+   * @param pnnx_operators pnnx图节点
+   * @param operators KuiperInfer计算图中的计算节点
+   */
+  static void InitOperatorOutputTensor(
+      const std::vector<pnnx::Operator *> &pnnx_operators,
+      const std::vector<std::shared_ptr<RuntimeOperator>> &operators);
+};
+
 /// 计算图结构，由多个计算节点和节点之间的数据流图组成
 class RuntimeGraph {
 public:
@@ -40,6 +65,12 @@ public:
    */
   bool Init();
 
+  /**
+   * 构建计算图
+   * @param input_name 计算图输入节点的名称
+   * @param output_name  计算图输出节点的名称
+   */
+  void Build(const std::string &input_name, const std::string &output_name);
   /**
    * 初始化计算图
    * @param param_path 计算图的结构文件

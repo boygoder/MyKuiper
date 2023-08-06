@@ -116,5 +116,6 @@ private:
   arma::fcube data_; //张量数据
 };
 using ftensor = Tensor<float>;
+using sftensor = std::shared_ptr<Tensor<float>>;
 } // namespace kuiper_infer
 #endif // KUIPER_COURSE_INCLUDE_TENSOR_HPP_

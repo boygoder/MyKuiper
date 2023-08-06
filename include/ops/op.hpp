@@ -7,6 +7,7 @@ enum class OpType {
   kOperatorSigmoid = 1,
   kOperatorMaxPooling = 2,
   kOperatorExpression = 3,
+  kOperatorConvolution = 4,
 };
 
 class Operator {
@@ -16,6 +17,7 @@ public:
   virtual ~Operator() = default; //虚基类
 
   explicit Operator(OpType op_type);
+  explicit Operator() = default;
 };
 
 } // namespace kuiper_infer
