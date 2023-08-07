@@ -12,17 +12,17 @@ public:
    * @param split_char 分隔符号
    * @return 根据csv文件得到的张量
    */
-  static std::shared_ptr<Tensor<float>> LoadData(const std::string &file_path,
-                                                 char split_char = ',');
+  static arma::fmat LoadData(const std::string &file_path,
+                             char split_char = ',');
   /**
    * 从csv文件中初始化张量,第一行是描述符
    * @param file_path csv文件的路径
    * @param split_char 分隔符号
    * @return 根据csv文件得到的张量
    */
-  static std::shared_ptr<Tensor<float>>
-  LoadDataWithHeader(const std::string &file_path,
-                     std::vector<std::string> &headers, char split_char = ',');
+  static arma::fmat LoadDataWithHeader(const std::string &file_path,
+                                       std::vector<std::string> &headers,
+                                       char split_char = ',');
 
 private:
   /**

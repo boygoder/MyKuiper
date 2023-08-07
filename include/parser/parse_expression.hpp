@@ -8,14 +8,14 @@
 namespace kuiper_infer {
 
 enum class TokenType {
-  TokenUnknown = -1,
-  TokenInputNumber = 0,
-  TokenComma = 1,
-  TokenLeftBracket = 2,
-  TokenRightBracket = 3,
-  TokenAdd = 4,
-  TokenMul = 5,
-  TokenDiv = 6,
+  TokenUnknown = -9,
+  TokenInputNumber = -8,
+  TokenComma = -7,
+  TokenLeftBracket = -6,
+  TokenRightBracket = -5,
+  TokenAdd = -4,
+  TokenMul = -3,
+  TokenDiv = -2,
 };
 
 struct Token {
@@ -25,11 +25,11 @@ struct Token {
   Token(TokenType token_type, int32_t start_pos, int32_t end_pos)
       : token_type(token_type), start_pos(start_pos), end_pos(end_pos) {}
 };
-
+//语法树的节点
 struct TokenNode {
   int32_t num_index = -1;
-  std::shared_ptr<TokenNode> left = nullptr;
-  std::shared_ptr<TokenNode> right = nullptr;
+  std::shared_ptr<TokenNode> left = nullptr;  //左节点
+  std::shared_ptr<TokenNode> right = nullptr; //右节点
   TokenNode(int32_t num_index, std::shared_ptr<TokenNode> left,
             std::shared_ptr<TokenNode> right);
   TokenNode() = default;
@@ -40,14 +40,25 @@ class ExpressionParser {
 public:
   explicit ExpressionParser(std::string statement)
       : statement_(std::move(statement)) {}
-  //将statement_序列化成Tokenizer，存储在tokens_和token_strs_中。
-  //参数表示：是否需要重新序列化
-  void Tokenizer(bool need_retoken = false);
-  //根据tokens_构建抽象语法树,调用Generate_函数递归构建
+  /**
+   * 词法分析
+   * @param re_tokenize 是否需要重新进行语法分析
+   */
+  void Tokenizer(bool re_tokenize = false);
+  /**
+   * 语法分析
+   * @return 生成的语法树
+   */
   std::vector<std::shared_ptr<TokenNode>> Generate();
-
+  /**
+   * 返回词法分析的结果
+   * @return 词法分析的结果
+   */
   const std::vector<Token> &tokens() const;
-
+  /**
+   * 返回词语字符串
+   * @return 词语字符串
+   */
   const std::vector<std::string> &token_strs() const;
 
 private:

@@ -2,26 +2,28 @@
 #include <glog/logging.h>
 
 namespace kuiper_infer {
-std::shared_ptr<Tensor<float>>
-CSVDataLoader::LoadDataWithHeader(const std::string &file_path,
-                                  std::vector<std::string> &headers,
-                                  char split_char) {
-  CHECK(!file_path.empty()) << "File path is empty!";
+arma::fmat CSVDataLoader::LoadDataWithHeader(const std::string &file_path,
+                                             std::vector<std::string> &headers,
+                                             char split_char) {
+  arma::fmat data;
+  if (file_path.empty()) {
+    LOG(ERROR) << "CSV file path is empty: " << file_path;
+    return data;
+  }
+
   std::ifstream in(file_path);
-  CHECK(in.is_open() && in.good()) << "File open failed! " << file_path;
+  if (!in.is_open() || !in.good()) {
+    LOG(ERROR) << "File open failed: " << file_path;
+    return data;
+  }
 
   std::string line_str;
   std::stringstream line_stream;
-  //读取矩阵的大小
+
   const auto &[rows, cols] = CSVDataLoader::GetMatrixSize(in, split_char);
+  data.zeros(rows - 1, cols);
   headers.clear();
   headers.resize(cols);
-  CHECK(rows >= 1);
-  //表头占一行,rows-1
-  std::shared_ptr<Tensor<float>> input_tensor =
-      std::make_shared<Tensor<float>>(1, rows - 1, cols);
-  arma::fmat &data = input_tensor->slice(0);
-
   size_t row = 0;
   while (in.good()) {
     std::getline(in, line_str);
@@ -37,8 +39,6 @@ CSVDataLoader::LoadDataWithHeader(const std::string &file_path,
     while (line_stream.good()) {
       std::getline(line_stream, token, split_char);
       try {
-        // todo 补充
-        // 能够读取到第一行的csv列名，并存放在headers中
         if (row == 0) {
           headers.at(col) = token;
         }
@@ -47,8 +47,8 @@ CSVDataLoader::LoadDataWithHeader(const std::string &file_path,
           data.at(row - 1, col) = std::stof(token);
         }
       } catch (std::exception &e) {
-        LOG(ERROR) << "Parse CSV File meet error: " << e.what();
-        continue;
+        DLOG(ERROR) << "Parse CSV File meet error: " << e.what()
+                    << " row:" << row << " col:" << col;
       }
       col += 1;
       CHECK(col <= cols) << "There are excessive elements on the column";
@@ -57,22 +57,28 @@ CSVDataLoader::LoadDataWithHeader(const std::string &file_path,
     row += 1;
     CHECK(row <= rows) << "There are excessive elements on the row";
   }
-  return input_tensor;
+  return data;
 }
 
-std::shared_ptr<Tensor<float>>
-CSVDataLoader::LoadData(const std::string &file_path, char split_char) {
-  CHECK(!file_path.empty()) << "File path is empty!";
+arma::fmat CSVDataLoader::LoadData(const std::string &file_path,
+                                   char split_char) {
+  arma::fmat data;
+  if (file_path.empty()) {
+    LOG(ERROR) << "CSV file path is empty: " << file_path;
+    return data;
+  }
+
   std::ifstream in(file_path);
-  CHECK(in.is_open() && in.good()) << "File open failed! " << file_path;
+  if (!in.is_open() || !in.good()) {
+    LOG(ERROR) << "File open failed: " << file_path;
+    return data;
+  }
 
   std::string line_str;
   std::stringstream line_stream;
 
   const auto &[rows, cols] = CSVDataLoader::GetMatrixSize(in, split_char);
-  std::shared_ptr<Tensor<float>> input_tensor =
-      std::make_shared<Tensor<float>>(1, rows, cols);
-  arma::fmat &data = input_tensor->slice(0);
+  data.zeros(rows, cols);
 
   size_t row = 0;
   while (in.good()) {
@@ -91,8 +97,8 @@ CSVDataLoader::LoadData(const std::string &file_path, char split_char) {
       try {
         data.at(row, col) = std::stof(token);
       } catch (std::exception &e) {
-        LOG(ERROR) << "Parse CSV File meet error: " << e.what();
-        continue;
+        DLOG(ERROR) << "Parse CSV File meet error: " << e.what()
+                    << " row:" << row << " col:" << col;
       }
       col += 1;
       CHECK(col <= cols) << "There are excessive elements on the column";
@@ -101,7 +107,7 @@ CSVDataLoader::LoadData(const std::string &file_path, char split_char) {
     row += 1;
     CHECK(row <= rows) << "There are excessive elements on the row";
   }
-  return input_tensor;
+  return data;
 }
 
 std::pair<size_t, size_t> CSVDataLoader::GetMatrixSize(std::ifstream &file,

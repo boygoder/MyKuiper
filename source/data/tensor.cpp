@@ -226,6 +226,7 @@ void Tensor<float>::Transform(const std::function<float(float)> &filter) {
 }
 
 void Tensor<float>::ReRawshape(const std::vector<uint32_t> &shapes) {
+  CHECK(!this->data_.empty());
   CHECK(!shapes.empty());
   const uint32_t origin_size = this->size();
   uint32_t current_size = 1;
@@ -249,10 +250,12 @@ void Tensor<float>::ReRawshape(const std::vector<uint32_t> &shapes) {
 }
 
 const std::vector<uint32_t> &Tensor<float>::raw_shapes() const {
+  CHECK(!this->data_.empty());
   return this->raw_shapes_;
 }
 
 void Tensor<float>::ReRawView(const std::vector<uint32_t> &shapes) {
+  CHECK(!this->data_.empty());
   CHECK(!shapes.empty());
   const uint32_t origin_size = this->size();
   uint32_t current_size = 1;
@@ -276,9 +279,11 @@ void Tensor<float>::ReRawView(const std::vector<uint32_t> &shapes) {
 }
 
 void Tensor<float>::ReView(const std::vector<uint32_t> &shapes) {
+  CHECK(!this->data_.empty());
   const uint32_t target_channels = shapes.at(0);
   const uint32_t target_rows = shapes.at(1);
   const uint32_t target_cols = shapes.at(2);
+  CHECK_EQ(this->data_.size(), target_channels * target_cols * target_rows);
   arma::fcube new_data(target_rows, target_cols, target_channels);
 
   const uint32_t plane_size = target_rows * target_cols;

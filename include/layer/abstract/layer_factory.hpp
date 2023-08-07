@@ -1,14 +1,16 @@
-#ifndef KUIPER_COURSE_INCLUDE_LAYER_LAYER_FACTORY_HPP_
-#define KUIPER_COURSE_INCLUDE_LAYER_LAYER_FACTORY_HPP_
+#ifndef KUIPER_COURSE_INCLUDE_LAYER_ABSTRACT_LAYER_FACTORY_HPP_
+#define KUIPER_COURSE_INCLUDE_LAYER_ABSTRACT_LAYER_FACTORY_HPP_
 #include "layer.hpp"
 #include "runtime/runtime_op.hpp"
+#include <map>
+#include <memory>
+#include <string>
 
 namespace kuiper_infer {
 class LayerRegisterer {
 public:
-  using Creator =
-      ParseParameterAttrStatus (*)(const std::shared_ptr<RuntimeOperator> &op,
-                                   std::shared_ptr<Layer> &layer);
+  using Creator = ParseParameterAttrStatus (*)(
+      const std::shared_ptr<RuntimeOperator> &, std::shared_ptr<Layer> &);
 
   using CreateRegistry = std::map<std::string, Creator>;
 
@@ -31,4 +33,4 @@ public:
 };
 
 } // namespace kuiper_infer
-#endif // KUIPER_COURSE_INCLUDE_FACTORY_LAYER_FACTORY_HPP_
+#endif // KUIPER_COURSE_INCLUDE_FACTORY_ABSTRACT_LAYER_FACTORY_HPP_

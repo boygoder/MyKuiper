@@ -8,8 +8,8 @@ void LayerRegisterer::RegisterCreator(const std::string &layer_type,
   CHECK(creator != nullptr) << "Layer creator is empty";
   CreateRegistry &registry = Registry();
   CHECK_EQ(registry.count(layer_type), 0)
-      << "Layer type: " << int(op_type) << " has already registered!";
-  registry.insert({layer, creator});
+      << "Layer type: " << layer_type << " has already registered!";
+  registry.insert({layer_type, creator});
 }
 
 std::shared_ptr<Layer>

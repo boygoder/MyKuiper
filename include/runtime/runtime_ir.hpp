@@ -1,5 +1,5 @@
-#ifndef KUIPER_COURSE_INCLUDE_RUNTIME_IR_HPP_
-#define KUIPER_COURSE_INCLUDE_RUNTIME_IR_HPP_
+#ifndef KUIPER_COURSE_INCLUDE_RUNTIME_RUNTINE_IR_HPP_
+#define KUIPER_COURSE_INCLUDE_RUNTIME_RUNTIME_IR_HPP_
 
 #include <glog/logging.h>
 #include <map>
@@ -8,10 +8,10 @@
 #include <string>
 #include <vector>
 
-#include "factory/layer_factory.hpp"
 #include "ir.h"
-#include "runtime/runtime_operand.hpp"
+#include "layer/abstract/layer_factory.hpp"
 #include "runtime_op.hpp"
+#include "runtime_operand.hpp"
 
 // runtimegraph -->> pnnx::graph
 // runtimeOperator -->> pnnx::operator
@@ -35,35 +35,15 @@
 
 namespace kuiper_infer {
 
-class RuntimeGraphShape {
-public:
-  /**
-   * 如果图是第一次运行，则根据节点输入operand的形状准备好后续Layer计算中所需要的Tensor
-   * 如果图是第二次以上运行，则检查输入operand的形状和operand中张量的形状是否匹配
-   * @param operators 计算图中的计算节点
-   */
-  static void InitOperatorInputTensor(
-      const std::vector<std::shared_ptr<RuntimeOperator>> &operators);
-
-  /**
-   * 如果图是第一次运行，则根据节点输出operand的形状准备好后续Layer计算中所需要的Tensor
-   * 如果图是第二次以上运行，则检查输出operand的形状和operand中张量的形状是否匹配
-   * @param pnnx_operators pnnx图节点
-   * @param operators KuiperInfer计算图中的计算节点
-   */
-  static void InitOperatorOutputTensor(
-      const std::vector<pnnx::Operator *> &pnnx_operators,
-      const std::vector<std::shared_ptr<RuntimeOperator>> &operators);
-};
-
 /// 计算图结构，由多个计算节点和节点之间的数据流图组成
 class RuntimeGraph {
 public:
   /**
-   * 计算图的初始化
-   * @return 是否初始化成功
+   * 初始化计算图
+   * @param param_path 计算图的结构文件
+   * @param bin_path 计算图中的权重文件
    */
-  bool Init();
+  RuntimeGraph(std::string param_path, std::string bin_path);
 
   /**
    * 构建计算图
@@ -71,12 +51,6 @@ public:
    * @param output_name  计算图输出节点的名称
    */
   void Build(const std::string &input_name, const std::string &output_name);
-  /**
-   * 初始化计算图
-   * @param param_path 计算图的结构文件
-   * @param bin_path 计算图中的权重文件
-   */
-  RuntimeGraph(std::string param_path, std::string bin_path);
 
   /**
    * 设置权重文件
@@ -102,8 +76,6 @@ public:
    */
   const std::string &bin_path() const;
 
-  const std::vector<std::shared_ptr<RuntimeOperator>> operators() const;
-
   /**
    * 计算图的执行,根据广度优先搜索的顺序执行
    * @param inputs 计算图的输入张量
@@ -116,6 +88,24 @@ public:
 
 private:
   /**
+   * 计算图的初始化
+   * @return 是否初始化成功
+   */
+  bool Init();
+  /**
+   * 根据计算图中的计算节点来返回Layer
+   * @param op 计算图中的计算节点
+   * @return 创建成功的Layer
+   */
+  static std::shared_ptr<Layer>
+  CreateLayer(const std::shared_ptr<RuntimeOperator> &op);
+  /**
+   * 检查当前节点是否就绪
+   * @param op 待检查的节点
+   * @return 是否就绪
+   */
+  static bool CheckOperatorReady(const std::shared_ptr<RuntimeOperator> &op);
+  /**
    * 探查下一层的计算节点
    * @param current_op 当前计算节点
    * @param operator_queue 计算节点的计算序列
@@ -127,38 +117,22 @@ private:
                  std::vector<std::shared_ptr<Tensor<float>>> layer_output_data);
 
   /**
-   * 检查当前节点是否就绪
-   * @param op 待检查的节点
-   * @return 是否就绪
-   */
-  static bool CheckOperatorReady(const std::shared_ptr<RuntimeOperator> &op);
-
-  /**
-   * 初始化kuiper infer计算图中的输入操作数
-   * @param src 上一个节点的输出操作数
-   * @param dest 下一个节点的输入操作数
-   */
-  static void SetOpInputData(
-      std::vector<std::shared_ptr<Tensor<float>>> &src,
-      std::vector<std::vector<std::shared_ptr<Tensor<float>>>> &dest);
-
-  /**
    * 初始化kuiper infer计算图节点中的输入操作数
    * @param inputs pnnx中的输入操作数
    * @param runtime_operator 计算图节点
    */
-  static void
-  InitInputOperators(const std::vector<pnnx::Operand *> &inputs,
-                     const std::shared_ptr<RuntimeOperator> &runtime_operator);
+  static void InitGraphOperatorsInput(
+      const std::vector<pnnx::Operand *> &inputs,
+      const std::shared_ptr<RuntimeOperator> &runtime_operator);
 
   /**
    * 初始化kuiper infer计算图节点中的输出操作数
    * @param outputs pnnx中的输出操作数
    * @param runtime_operator 计算图节点
    */
-  static void
-  InitOutputOperators(const std::vector<pnnx::Operand *> &outputs,
-                      const std::shared_ptr<RuntimeOperator> &runtime_operator);
+  static void InitGraphOperatorsOutput(
+      const std::vector<pnnx::Operand *> &outputs,
+      const std::shared_ptr<RuntimeOperator> &runtime_operator);
 
   /**
    * 初始化kuiper infer计算图中的节点属性
@@ -199,4 +173,4 @@ private:
 
 } // namespace kuiper_infer
 
-#endif // KUIPER_COURSE_INCLUDE_RUNTIME_IR_HPP_
+#endif // KUIPER_COURSE_INCLUDE_RUNTIME_RUNTIME_IR_HPP_

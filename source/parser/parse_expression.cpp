@@ -6,6 +6,9 @@
 #include <utility>
 
 namespace kuiper_infer {
+TokenNode::TokenNode(int32_t num_index, std::shared_ptr<TokenNode> left,
+                     std::shared_ptr<TokenNode> right)
+    : num_index(num_index), left(std::move(left)), right(std::move(right)){};
 
 void ReversePolish(const std::shared_ptr<TokenNode> &root_node,
                    std::vector<std::shared_ptr<TokenNode>> &reverse_polish) {
@@ -16,8 +19,8 @@ void ReversePolish(const std::shared_ptr<TokenNode> &root_node,
   }
 }
 
-void ExpressionParser::Tokenizer(bool need_retoken) {
-  if (!need_retoken && !this->tokens_.empty()) {
+void ExpressionParser::Tokenizer(bool re_tokenize) {
+  if (!re_tokenize && !this->tokens_.empty()) {
     return;
   }
 
@@ -195,13 +198,10 @@ std::vector<std::shared_ptr<TokenNode>> ExpressionParser::Generate() {
   std::shared_ptr<TokenNode> root = Generate_(index);
   CHECK(root != nullptr);
   CHECK(index == tokens_.size() - 1);
-
+  //转逆波兰式，然后转移到expression中
   std::vector<std::shared_ptr<TokenNode>> reverse_polish;
   ReversePolish(root, reverse_polish);
   return reverse_polish;
 }
 
-TokenNode::TokenNode(int32_t num_index, std::shared_ptr<TokenNode> left,
-                     std::shared_ptr<TokenNode> right)
-    : num_index(num_index), left(std::move(left)), right(std::move(right)) {}
 } // namespace kuiper_infer

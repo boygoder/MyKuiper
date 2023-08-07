@@ -1,8 +1,8 @@
 //
 // Created by fss on 22-11-17.
 //
-#include <gtest/gtest.h>
 #include <glog/logging.h>
+#include <gtest/gtest.h>
 
 int main(int argc, char *argv[]) {
   testing::InitGoogleTest(&argc, argv);
