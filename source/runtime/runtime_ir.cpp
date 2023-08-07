@@ -284,8 +284,8 @@ void RuntimeGraph::InitInputOperators(
     const pnnx::Operator *producer = input->producer;
     std::shared_ptr<RuntimeOperand> runtime_operand =
         std::make_shared<RuntimeOperand>();
-    runtime_operand->name = producer->name; //算子的名称？还是操作数的名称？
-    // runtime_operand->name = input->name;
+    //一个算子的输入数的名称，直接采用输入来源的算子名称
+    runtime_operand->name = producer->name;
     runtime_operand->shapes = input->shape;
 
     switch (input->type) {
@@ -419,7 +419,7 @@ void RuntimeGraph::InitGraphAttrs(
 
 const std::vector<std::shared_ptr<RuntimeOperator>>
 RuntimeGraph::operators() const {
-  CHECK(graph_state_ == GraphState::Complete);
+  // CHECK(graph_state_ == GraphState::Complete);
   return this->operators_;
 }
 
@@ -444,7 +444,7 @@ void RuntimeGraph::Build(const std::string &input_name,
     } else if (kOperator->type == "pnnx.Output") {
       this->output_operators_maps_.insert({kOperator->name, kOperator});
     } else {
-      // 添加其他Layer
+      // 待添加其他Layer
     }
   }
   RuntimeGraphShape::InitOperatorInputTensor(operators_);
@@ -452,6 +452,149 @@ void RuntimeGraph::Build(const std::string &input_name,
   graph_state_ = GraphState::Complete;
   input_name_ = input_name;
   output_name_ = output_name;
+}
+
+std::vector<std::shared_ptr<Tensor<float>>>
+RuntimeGraph::Forward(const std::vector<std::shared_ptr<Tensor<float>>> &inputs,
+                      bool debug) {
+  if (graph_state_ < GraphState::Complete) {
+    LOG(FATAL) << "Graph need be build!";
+  }
+  CHECK(graph_state_ == GraphState::Complete)
+      << "Graph status error, current state is " << int(graph_state_);
+
+  std::shared_ptr<RuntimeOperator> input_op;
+  if (input_operators_maps_.find(input_name_) == input_operators_maps_.end()) {
+    LOG(FATAL) << "Can not find the input node: " << input_name_;
+  } else {
+    input_op = input_operators_maps_.at(input_name_);
+  }
+
+  std::shared_ptr<RuntimeOperator> output_op;
+  if (output_operators_maps_.find(output_name_) ==
+      output_operators_maps_.end()) {
+    LOG(FATAL) << "Can not find the output node: " << input_name_;
+  } else {
+    output_op = output_operators_maps_.at(output_name_);
+  }
+
+  std::deque<std::shared_ptr<RuntimeOperator>> operator_queue;
+  operator_queue.push_back(input_op);
+  std::map<std::string, double> run_duration_infos;
+
+  while (!operator_queue.empty()) {
+    std::shared_ptr<RuntimeOperator> current_op = operator_queue.front();
+    operator_queue.pop_front();
+
+    if (!current_op || current_op == output_op) {
+      LOG(INFO) << "Model Inference End";
+      break;
+    }
+    //第一个节点的输出inputs就是整张图的输入
+    if (current_op == input_op) {
+      ProbeNextLayer(current_op, operator_queue, inputs);
+    } else {
+      std::string current_op_name = current_op->name;
+      if (!CheckOperatorReady(current_op)) {
+        if (operator_queue.empty()) {
+          // 当current op是最后一个节点的时候，说明它已经不能被ready
+          LOG(FATAL) << "Current operator is not ready!";
+          break;
+        } else {
+          // 如果不是最后一个节点，它还有被ready的可能性
+          operator_queue.push_back(current_op);
+        }
+      }
+
+      const std::vector<std::shared_ptr<RuntimeOperand>> &input_operand_datas =
+          current_op->input_operands_seq;
+      std::vector<std::shared_ptr<Tensor<float>>> layer_input_datas;
+      for (const auto &input_operand_data : input_operand_datas) {
+        for (const auto &input_data : input_operand_data->datas) {
+          layer_input_datas.push_back(input_data);
+        }
+      }
+
+      CHECK(!layer_input_datas.empty()) << "Layer input data is empty";
+      CHECK(current_op->output_operands != nullptr &&
+            !current_op->output_operands->datas.empty())
+          << "Layer output data is empty";
+
+      const auto &start = std::chrono::steady_clock::now();
+      ProbeNextLayer(current_op, operator_queue,
+                     current_op->output_operands->datas);
+      if (debug) {
+        LOG(INFO) << "current operator: " << current_op->name;
+      }
+    }
+  }
+
+  for (const auto &op : this->operators_) {
+    op->meet_num = 0;
+  }
+
+  CHECK(output_op->input_operands.size() == 1)
+      << "The graph only support one path to the output node yet!";
+  //最后一个节点的输入就是整张图的输出
+  const auto &output_op_input_operand = output_op->input_operands.begin();
+  const auto &output_operand = output_op_input_operand->second;
+  return output_operand->datas;
+}
+
+void RuntimeGraph::ProbeNextLayer(
+    const std::shared_ptr<RuntimeOperator> &current_op,
+    std::deque<std::shared_ptr<RuntimeOperator>> &operator_queue,
+    std::vector<std::shared_ptr<Tensor<float>>> layer_output_datas) {
+  // layer_output_datas是current_op的输出，将要传递给后继节点的输入
+  const auto &next_ops = current_op->output_operators;
+
+  std::vector<std::vector<std::shared_ptr<ftensor>>> next_input_datas_arr;
+  for (const auto &next_op : next_ops) {
+    const auto &next_rt_operator = next_op.second;
+    const auto &next_input_operands = next_rt_operator->input_operands;
+    // 查看后继节点的输入，是否需要当前节点的输出
+    if (next_input_operands.find(current_op->name) !=
+        next_input_operands.end()) {
+      //取出给输入预留的内存空间的指针
+      std::vector<std::shared_ptr<ftensor>> next_input_datas =
+          next_input_operands.at(current_op->name)->datas;
+      next_input_datas_arr.push_back(next_input_datas);
+      next_rt_operator->meet_num += 1;
+      //如果后继节点的输入都已经填充且还未加入队列，加入队列
+      if (std::find(operator_queue.begin(), operator_queue.end(),
+                    next_rt_operator) == operator_queue.end()) {
+        if (CheckOperatorReady(next_rt_operator)) {
+          operator_queue.push_back(next_rt_operator);
+        }
+      }
+    }
+  }
+  //将layer_output_datas中的数据，传递给next_input_datas_arr
+  SetOpInputData(layer_output_datas, next_input_datas_arr);
+}
+
+bool RuntimeGraph::CheckOperatorReady(
+    const std::shared_ptr<RuntimeOperator> &op) {
+  CHECK(op != nullptr);
+  CHECK(op->meet_num <= op->input_operands.size());
+  if (op->meet_num == op->input_operands.size()) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+void RuntimeGraph::SetOpInputData(
+    std::vector<std::shared_ptr<Tensor<float>>> &src,
+    std::vector<std::vector<std::shared_ptr<Tensor<float>>>> &dest) {
+  CHECK(!src.empty() && !dest.empty()) << "Src or dest array is empty!";
+  for (uint32_t j = 0; j < src.size(); ++j) {
+    const auto &src_data = src.at(j)->data();
+    for (uint32_t i = 0; i < dest.size(); ++i) {
+      //      CHECK(!dest.empty() && dest.at(i).size() == src.size());
+      dest.at(i).at(j)->set_data(src_data);
+    }
+  }
 }
 
 } // namespace kuiper_infer

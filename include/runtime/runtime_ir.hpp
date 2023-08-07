@@ -104,7 +104,44 @@ public:
 
   const std::vector<std::shared_ptr<RuntimeOperator>> operators() const;
 
+  /**
+   * 计算图的执行,根据广度优先搜索的顺序执行
+   * @param inputs 计算图的输入张量
+   * @param debug 是否调试，如果调试则输出一些中间信息
+   * @return 计算图的输出张量
+   */
+  std::vector<std::shared_ptr<Tensor<float>>>
+  Forward(const std::vector<std::shared_ptr<Tensor<float>>> &inputs,
+          bool debug = false);
+
 private:
+  /**
+   * 探查下一层的计算节点
+   * @param current_op 当前计算节点
+   * @param operator_queue 计算节点的计算序列
+   * @param layer_output_data 当前节点的输出，赋予到下一层计算节点的输入张量中
+   */
+  static void
+  ProbeNextLayer(const std::shared_ptr<RuntimeOperator> &current_op,
+                 std::deque<std::shared_ptr<RuntimeOperator>> &operator_queue,
+                 std::vector<std::shared_ptr<Tensor<float>>> layer_output_data);
+
+  /**
+   * 检查当前节点是否就绪
+   * @param op 待检查的节点
+   * @return 是否就绪
+   */
+  static bool CheckOperatorReady(const std::shared_ptr<RuntimeOperator> &op);
+
+  /**
+   * 初始化kuiper infer计算图中的输入操作数
+   * @param src 上一个节点的输出操作数
+   * @param dest 下一个节点的输入操作数
+   */
+  static void SetOpInputData(
+      std::vector<std::shared_ptr<Tensor<float>>> &src,
+      std::vector<std::vector<std::shared_ptr<Tensor<float>>>> &dest);
+
   /**
    * 初始化kuiper infer计算图节点中的输入操作数
    * @param inputs pnnx中的输入操作数
