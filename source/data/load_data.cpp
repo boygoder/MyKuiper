@@ -61,7 +61,7 @@ arma::fmat CSVDataLoader::LoadDataWithHeader(const std::string &file_path,
 }
 
 arma::fmat CSVDataLoader::LoadData(const std::string &file_path,
-                                   char split_char) {
+                                   const char split_char) {
   arma::fmat data;
   if (file_path.empty()) {
     LOG(ERROR) << "CSV file path is empty: " << file_path;
@@ -145,7 +145,7 @@ std::pair<size_t, size_t> CSVDataLoader::GetMatrixSize(std::ifstream &file,
   }
   file.clear();
   file.seekg(start_pos);
-  std::pair<size_t, size_t> msize(fn_rows, fn_cols);
+  std::pair<size_t, size_t> msize = {fn_rows, fn_cols};
   return msize;
 }
 } // namespace kuiper_infer

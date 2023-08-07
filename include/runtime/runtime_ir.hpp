@@ -111,10 +111,10 @@ private:
    * @param operator_queue 计算节点的计算序列
    * @param layer_output_data 当前节点的输出，赋予到下一层计算节点的输入张量中
    */
-  static void
-  ProbeNextLayer(const std::shared_ptr<RuntimeOperator> &current_op,
-                 std::deque<std::shared_ptr<RuntimeOperator>> &operator_queue,
-                 std::vector<std::shared_ptr<Tensor<float>>> layer_output_data);
+  static void ProbeNextLayer(
+      const std::shared_ptr<RuntimeOperator> &current_op,
+      std::deque<std::shared_ptr<RuntimeOperator>> &operator_queue,
+      const std::vector<std::shared_ptr<Tensor<float>>> layer_output_data);
 
   /**
    * 初始化kuiper infer计算图节点中的输入操作数

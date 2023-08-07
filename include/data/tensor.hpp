@@ -40,9 +40,9 @@ public:
 
   Tensor(Tensor &&tensor) noexcept;
 
-  Tensor<float> &operator=(Tensor &&tensor) noexcept;
+  Tensor<float> &operator=(Tensor<float> &&tensor) noexcept;
 
-  Tensor<float> &operator=(const Tensor &tensor);
+  Tensor<float> &operator=(const Tensor<float> &tensor);
   /**
    * 返回张量的行数
    * @return 张量的行数

@@ -37,18 +37,20 @@ Tensor<float>::Create(uint32_t channels, uint32_t rows, uint32_t cols) {
 };
 
 Tensor<float>::Tensor(const Tensor &tensor) {
-  this->data_ = tensor.data_;
-  this->raw_shapes_ = tensor.raw_shapes_;
+  if (this != &tensor){
+    this->data_ = tensor.data_;
+    this->raw_shapes_ = tensor.raw_shapes_;
+  }
 }
 
-Tensor<float>::Tensor(Tensor &&tensor) noexcept {
+Tensor<float>::Tensor(Tensor<float> &&tensor) noexcept {
   if (this != &tensor) {
     this->data_ = std::move(tensor.data_);
     this->raw_shapes_ = tensor.raw_shapes_;
   }
 }
 
-Tensor<float> &Tensor<float>::operator=(const Tensor &tensor) {
+Tensor<float> &Tensor<float>::operator=(const Tensor<float> &tensor) {
   if (this != &tensor) {
     this->data_ = tensor.data_;
     this->raw_shapes_ = tensor.raw_shapes_;
@@ -56,7 +58,7 @@ Tensor<float> &Tensor<float>::operator=(const Tensor &tensor) {
   return *this;
 }
 
-Tensor<float> &Tensor<float>::operator=(Tensor &&tensor) noexcept {
+Tensor<float> &Tensor<float>::operator=(Tensor<float> &&tensor) noexcept {
   if (this != &tensor) {
     this->data_ = std::move(tensor.data_);
     this->raw_shapes_ = tensor.raw_shapes_;
@@ -159,7 +161,7 @@ void Tensor<float>::Padding(const std::vector<uint32_t> &pads,
                        this->data_.n_slices);
   new_data.fill(padding_value);
 
-  new_data.subcube(pad_rows1, pad_cols1, 0, new_data.n_rows - pad_rows1 - 1,
+  new_data.subcube(pad_rows1, pad_cols1, 0, new_data.n_rows - pad_rows2 - 1,
                    new_data.n_cols - pad_cols2 - 1, new_data.n_slices - 1) =
       this->data_;
   this->data_ = std::move(new_data);
@@ -183,8 +185,7 @@ void Tensor<float>::Fill(const std::vector<float> &values) {
   for (int i = 0; i < channels; ++i) {
     auto &channel_data = this->data_.slice(i);
     const arma::fmat &channel_data_t =
-        arma::fmat(values.data() + i * planes, rows, cols);
-    // fmat按列存储，我们想按行读取。
+        arma::fmat(values.data() + i * planes, cols, rows);
     channel_data = channel_data_t.t();
   }
 }
@@ -209,7 +210,7 @@ void Tensor<float>::Rand() {
 
 void Tensor<float>::Ones() {
   CHECK(!this->data_.empty());
-  this->data_.fill(1.);
+  this->Fill(1.f);
 }
 
 std::shared_ptr<Tensor<float>> Tensor<float>::Clone() {
@@ -218,11 +219,12 @@ std::shared_ptr<Tensor<float>> Tensor<float>::Clone() {
 
 void Tensor<float>::Transform(const std::function<float(float)> &filter) {
   CHECK(!this->data_.empty());
-  uint32_t channels = this->channels();
-  for (uint32_t c = 0; c < channels; ++c) {
-    // arma::fmat::transform
-    this->data_.slice(c).transform(filter);
-  }
+  this->data_.transform(filter);
+  // uint32_t channels = this->channels();
+  //for (uint32_t c = 0; c < channels; ++c) {
+  //  arma::fmat::transform
+  //  this->data_.slice(c).transform(filter);
+  //}
 }
 
 void Tensor<float>::ReRawshape(const std::vector<uint32_t> &shapes) {
@@ -250,7 +252,7 @@ void Tensor<float>::ReRawshape(const std::vector<uint32_t> &shapes) {
 }
 
 const std::vector<uint32_t> &Tensor<float>::raw_shapes() const {
-  CHECK(!this->data_.empty());
+  CHECK(!this->raw_shapes_.empty());
   return this->raw_shapes_;
 }
 
@@ -297,11 +299,13 @@ void Tensor<float>::ReView(const std::vector<uint32_t> &shapes) {
         const uint32_t ch = pos_index / plane_size;
         const uint32_t row = (pos_index - ch * plane_size) / target_cols;
         const uint32_t col = (pos_index - ch * plane_size - row * target_cols);
+        CHECK(ch < new_data.n_slices && col < new_data.n_cols &&
+                row < new_data.n_rows);
         new_data.at(row, col, ch) = *(colptr + r);
       }
     }
   }
-  this->data_ = new_data;
+  this->data_ = std::move(new_data);
 }
 
 const float *Tensor<float>::raw_ptr() const {

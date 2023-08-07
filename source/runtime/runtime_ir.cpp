@@ -332,7 +332,9 @@ RuntimeGraph::Forward(const std::vector<std::shared_ptr<Tensor<float>>> &inputs,
     operator_queue.pop_front();
 
     if (!current_op || current_op == output_op) {
-      LOG(INFO) << "Model Inference End";
+      if (debug){
+        LOG(INFO) << "Model Inference End";
+      }
       break;
     }
     //输入节点的输出inputs就是整张图的输入，将其拷贝到后继节点中
@@ -440,7 +442,7 @@ RuntimeGraph::CreateLayer(const std::shared_ptr<RuntimeOperator> &op) {
 void RuntimeGraph::ProbeNextLayer(
     const std::shared_ptr<RuntimeOperator> &current_op,
     std::deque<std::shared_ptr<RuntimeOperator>> &operator_queue,
-    std::vector<std::shared_ptr<Tensor<float>>> layer_output_datas) {
+    const std::vector<std::shared_ptr<Tensor<float>>> layer_output_datas) {
   // 当前节点的后继节点next_ops
   const auto &next_ops = current_op->output_operators;
   // 对所有后继节点进行遍历

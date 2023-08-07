@@ -142,8 +142,7 @@ std::shared_ptr<TokenNode> ExpressionParser::Generate_(int32_t &index) {
            current_token.token_type == TokenType::TokenAdd ||
            current_token.token_type == TokenType::TokenDiv) {
     std::shared_ptr<TokenNode> current_node = std::make_shared<TokenNode>();
-    //操作符的num_index都是TokenType取反
-    current_node->num_index = -int(current_token.token_type);
+    current_node->num_index = int(current_token.token_type);
     //操作符后紧跟左括号
     index += 1;
     CHECK(index < this->tokens_.size());

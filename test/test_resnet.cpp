@@ -55,25 +55,25 @@ TEST(test_model, resnet) {
   const std::string &param_path = "../tmp/resnet18_batch1.pnnx.param";
   const std::string &weight_path = "../tmp/resnet18_batch1.pnnx.bin";
   RuntimeGraph graph(param_path, weight_path);
-  // graph.Build("pnnx_input_0", "pnnx_output_0");
-  // LOG(INFO) << "Start kuiperInfer inference";
-  // std::shared_ptr<Tensor<float>> input1 =
-  //     std::make_shared<Tensor<float>>(3, 224, 224);
-  // input1->Fill(1.);
+  graph.Build("pnnx_input_0", "pnnx_output_0");
+  LOG(INFO) << "Start kuiperInfer inference";
+  std::shared_ptr<Tensor<float>> input1 =
+      std::make_shared<Tensor<float>>(3, 224, 224);
+  input1->Fill(1.);
 
-  // std::vector<std::shared_ptr<Tensor<float>>> inputs;
-  // inputs.push_back(input1);
+  std::vector<std::shared_ptr<Tensor<float>>> inputs;
+  inputs.push_back(input1);
 
-  //   std::vector<std::shared_ptr<Tensor<float>>> outputs =
-  //       graph.Forward(inputs, false);
-  //   ASSERT_EQ(outputs.size(), 1);
+  std::vector<std::shared_ptr<Tensor<float>>> outputs =
+      graph.Forward(inputs, false);
+  ASSERT_EQ(outputs.size(), 1);
 
-  //   const auto &output2 = CSVDataLoader::LoadData("../tmp/out.csv");
-  //   const auto &output1 = outputs.front()->data().slice(0);
-  //   ASSERT_EQ(output1.size(), output2.size());
-  //   for (uint32_t s = 0; s < output1.size(); ++s) {
-  //     ASSERT_LE(std::abs(output1.at(s) - output2.at(s)), 1e-5);
-  //   }
+  const auto &output2 = CSVDataLoader::LoadData("../tmp/out.csv");
+  const auto &output1 = outputs.front()->data().slice(0);
+  ASSERT_EQ(output1.size(), output2.size());
+  for (uint32_t s = 0; s < output1.size(); ++s) {
+    ASSERT_LE(std::abs(output1.at(s) - output2.at(s)), 1e-4);
+  }
 }
 
 TEST(test_model, resnet_classify_demo) {
