@@ -115,12 +115,12 @@ arma::fcube &Tensor<float>::data() { return this->data_; }
 
 const arma::fcube &Tensor<float>::data() const { return this->data_; }
 
-arma::fmat &Tensor<float>::at(uint32_t channel) {
+arma::fmat &Tensor<float>::slice(uint32_t channel) {
   CHECK_LT(channel, this->channels());
   return this->data_.slice(channel);
 }
 
-const arma::fmat &Tensor<float>::at(uint32_t channel) const {
+const arma::fmat &Tensor<float>::slice(uint32_t channel) const {
   CHECK_LT(channel, this->channels());
   return this->data_.slice(channel);
 }
@@ -216,104 +216,6 @@ std::shared_ptr<Tensor<float>> Tensor<float>::Clone() {
   return std::make_shared<Tensor>(*this);
 }
 
-std::shared_ptr<Tensor<float>>
-Tensor<float>::ElementAdd(const std::shared_ptr<Tensor<float>> &tensor1,
-                          const std::shared_ptr<Tensor<float>> &tensor2) {
-  CHECK(!tensor1->empty() && !tensor2->empty());
-  CHECK(tensor1->shapes() == tensor2->shapes())
-      << "Tensors shape are not adapting";
-  std::shared_ptr<Tensor<float>> output_tensor =
-      std::make_shared<Tensor<float>>(tensor1->channels(), tensor1->rows(),
-                                      tensor1->cols());
-  output_tensor->data_ = tensor1->data_ + tensor2->data_;
-  return output_tensor;
-}
-
-std::shared_ptr<Tensor<float>>
-Tensor<float>::ElementMultiply(const std::shared_ptr<Tensor<float>> &tensor1,
-                               const std::shared_ptr<Tensor<float>> &tensor2) {
-  CHECK(!tensor1->empty() && !tensor2->empty());
-  if (tensor1->shapes() == tensor2->shapes()) {
-    std::shared_ptr<Tensor<float>> output_tensor =
-        std::make_shared<Tensor<float>>(tensor1->channels(), tensor1->rows(),
-                                        tensor1->cols());
-    // arma中，%表示element-wise multiplication of two objects
-    output_tensor->data_ = tensor1->data_ % tensor2->data_;
-    return output_tensor;
-  } else {
-    //支持单元素与矩阵的逐元素相乘
-    CHECK(tensor1->channels() == tensor2->channels())
-        << "Tensors shape are not adapting";
-    uint32_t channels = tensor1->channels();
-    std::shared_ptr<Tensor<float>> tensor1_;
-    std::shared_ptr<Tensor<float>> tensor2_;
-
-    if (tensor2->rows() == 1 && tensor2->cols() == 1) {
-      tensor1_ = tensor1;
-      tensor2_ = tensor2;
-    } else if (tensor1->rows() == 1 && tensor1->cols() == 1) {
-      tensor1_ = tensor2;
-      tensor2_ = tensor1;
-    } else {
-      LOG(FATAL) << "Tensors shape are not adapting";
-    }
-
-    const std::shared_ptr<Tensor<float>> input_tensor2_ =
-        std::make_shared<Tensor<float>>(channels, tensor1_->rows(),
-                                        tensor1_->cols());
-    for (uint32_t c = 0; c < channels; ++c) {
-      input_tensor2_->data_.slice(c).fill(tensor2_->index(c));
-    }
-    std::shared_ptr<Tensor<float>> output_tensor =
-        std::make_shared<Tensor<float>>(input_tensor2_->rows(),
-                                        input_tensor2_->cols(),
-                                        input_tensor2_->channels());
-    output_tensor->data_ = tensor1_->data_ % input_tensor2_->data_;
-    return output_tensor;
-  }
-}
-
-std::shared_ptr<Tensor<float>>
-Tensor<float>::ElementDivision(const std::shared_ptr<Tensor<float>> &tensor1,
-                               const std::shared_ptr<Tensor<float>> &tensor2) {
-  CHECK(!tensor1->empty() && !tensor2->empty());
-  for (int channel = 0; channel < tensor2->channels(); ++channel) {
-    for (int row = 0; row < tensor2->rows(); ++row) {
-      for (int col = 0; col < tensor2->cols(); ++col) {
-        float data = tensor2->at(channel, row, col);
-        CHECK(fabs(data) > 1e-16)
-            << "The divisor is less than 1e-16,almost zero.";
-      }
-    }
-  }
-  if (tensor1->shapes() == tensor2->shapes()) {
-    std::shared_ptr<Tensor<float>> output_tensor =
-        std::make_shared<Tensor<float>>(tensor1->channels(), tensor1->rows(),
-                                        tensor1->cols());
-    // arma中，/表示element-wise division of an object by another object or a
-    // scalar
-    output_tensor->data_ = tensor1->data_ / tensor2->data_;
-    return output_tensor;
-  } else {
-    //张量除以单元素
-    CHECK(tensor1->channels() == tensor2->channels())
-        << "Tensors shape are not adapting";
-    uint32_t channels = tensor1->channels();
-
-    if (tensor2->rows() == 1 || tensor2->cols() == 1) {
-      LOG(FATAL) << "Tensors shape are not adapting";
-    }
-    std::shared_ptr<Tensor<float>> output_tensor =
-        std::make_shared<Tensor<float>>(tensor1->rows(), tensor1->cols(),
-                                        tensor1->channels());
-    for (int c = 0; c < channels; ++c) {
-      float scalar = tensor2->index(c);
-      output_tensor->data_.slice(c) = tensor1->data_.slice(c) / scalar;
-    }
-    return output_tensor;
-  }
-}
-
 void Tensor<float>::Transform(const std::function<float(float)> &filter) {
   CHECK(!this->data_.empty());
   uint32_t channels = this->channels();
@@ -334,7 +236,7 @@ void Tensor<float>::ReRawshape(const std::vector<uint32_t> &shapes) {
   CHECK(current_size == origin_size);
 
   if (shapes.size() == 3) {
-    // arma::fcube::shape(rows,clos,channels)
+    // arma::fcube::shape(rows,cols,channels)
     this->data_.reshape(shapes.at(1), shapes.at(2), shapes.at(0));
     this->raw_shapes_ = {shapes.at(0), shapes.at(1), shapes.at(2)};
   } else if (shapes.size() == 2) {
@@ -401,4 +303,171 @@ const float *Tensor<float>::raw_ptr() const {
   CHECK(!this->data_.empty());
   return this->data_.memptr();
 }
+
+bool TensorIsSame(const std::shared_ptr<Tensor<float>> &a,
+                  const std::shared_ptr<Tensor<float>> &b) {
+  CHECK(a != nullptr);
+  CHECK(b != nullptr);
+  if (a->shapes() != b->shapes()) {
+    return false;
+  }
+  bool is_same = arma::approx_equal(a->data(), b->data(), "absdiff", 1e-5);
+  return is_same;
+}
+
+void TensorElementAdd(const std::shared_ptr<Tensor<float>> &tensor1,
+                      const std::shared_ptr<Tensor<float>> &tensor2,
+                      const std::shared_ptr<Tensor<float>> &output_tensor) {
+  CHECK(tensor1 != nullptr && tensor2 != nullptr && output_tensor != nullptr);
+  if (tensor1->shapes() == tensor2->shapes()) {
+    CHECK(tensor1->shapes() == output_tensor->shapes());
+    output_tensor->set_data(tensor1->data() + tensor2->data());
+  } else {
+    CHECK(tensor1->channels() == tensor2->channels())
+        << "Tensors shape are not adapting";
+    const auto &[input_tensor1, input_tensor2] =
+        TensorBroadcast(tensor1, tensor2);
+    CHECK(output_tensor->shapes() == input_tensor1->shapes() &&
+          output_tensor->shapes() == input_tensor2->shapes());
+    output_tensor->set_data(input_tensor1->data() + input_tensor2->data());
+  }
+}
+
+void TensorElementMultiply(
+    const std::shared_ptr<Tensor<float>> &tensor1,
+    const std::shared_ptr<Tensor<float>> &tensor2,
+    const std::shared_ptr<Tensor<float>> &output_tensor) {
+  CHECK(tensor1 != nullptr && tensor2 != nullptr && output_tensor != nullptr);
+  if (tensor1->shapes() == tensor2->shapes()) {
+    CHECK(tensor1->shapes() == output_tensor->shapes());
+    output_tensor->set_data(tensor1->data() % tensor2->data());
+  } else {
+    CHECK(tensor1->channels() == tensor2->channels())
+        << "Tensors shape are not adapting";
+    const auto &[input_tensor1, input_tensor2] =
+        TensorBroadcast(tensor1, tensor2);
+    CHECK(output_tensor->shapes() == input_tensor1->shapes() &&
+          output_tensor->shapes() == input_tensor2->shapes());
+    output_tensor->set_data(input_tensor1->data() % input_tensor2->data());
+  }
+}
+
+std::shared_ptr<Tensor<float>>
+TensorElementAdd(const std::shared_ptr<Tensor<float>> &tensor1,
+                 const std::shared_ptr<Tensor<float>> &tensor2) {
+  CHECK(tensor1 != nullptr && tensor2 != nullptr);
+  if (tensor1->shapes() == tensor2->shapes()) {
+    sftensor output_tensor = TensorCreate(tensor1->shapes());
+    output_tensor->set_data(tensor1->data() + tensor2->data());
+    return output_tensor;
+  } else {
+    // broadcast
+    CHECK(tensor1->channels() == tensor2->channels())
+        << "Tensors shape are not adapting";
+    const auto &[input_tensor1, input_tensor2] =
+        TensorBroadcast(tensor1, tensor2);
+    CHECK(input_tensor1->shapes() == input_tensor2->shapes());
+    sftensor output_tensor = TensorCreate(input_tensor1->shapes());
+    output_tensor->set_data(input_tensor1->data() + input_tensor2->data());
+    return output_tensor;
+  }
+}
+
+std::shared_ptr<Tensor<float>>
+TensorElementMultiply(const std::shared_ptr<Tensor<float>> &tensor1,
+                      const std::shared_ptr<Tensor<float>> &tensor2) {
+  CHECK(tensor1 != nullptr && tensor2 != nullptr);
+  if (tensor1->shapes() == tensor2->shapes()) {
+    sftensor output_tensor = TensorCreate(tensor1->shapes());
+    output_tensor->set_data(tensor1->data() % tensor2->data());
+    return output_tensor;
+  } else {
+    // broadcast
+    CHECK(tensor1->channels() == tensor2->channels())
+        << "Tensors shape are not adapting";
+    const auto &[input_tensor1, input_tensor2] =
+        TensorBroadcast(tensor1, tensor2);
+    CHECK(input_tensor1->shapes() == input_tensor2->shapes());
+    sftensor output_tensor = TensorCreate(input_tensor1->shapes());
+    output_tensor->set_data(input_tensor1->data() % input_tensor2->data());
+    return output_tensor;
+  }
+}
+
+std::shared_ptr<Tensor<float>> TensorCreate(uint32_t channels, uint32_t rows,
+                                            uint32_t cols) {
+  return std::make_shared<Tensor<float>>(channels, rows, cols);
+}
+
+std::shared_ptr<Tensor<float>>
+TensorCreate(const std::vector<uint32_t> &shapes) {
+  CHECK(shapes.size() == 3);
+  return TensorCreate(shapes.at(0), shapes.at(1), shapes.at(2));
+}
+
+std::shared_ptr<Tensor<float>>
+TensorPadding(const std::shared_ptr<Tensor<float>> &tensor,
+              const std::vector<uint32_t> &pads, float padding_value) {
+  CHECK(tensor != nullptr && !tensor->empty());
+  CHECK(pads.size() == 4);
+  uint32_t pad_rows1 = pads.at(0); // up
+  uint32_t pad_rows2 = pads.at(1); // bottom
+  uint32_t pad_cols1 = pads.at(2); // left
+  uint32_t pad_cols2 = pads.at(3); // right
+
+  std::shared_ptr<ftensor> output = std::make_shared<ftensor>(
+      tensor->channels(), tensor->rows() + pad_rows1 + pad_rows2,
+      tensor->cols() + pad_cols1 + pad_cols2);
+
+  if (padding_value != 0.f)
+    output->Fill(padding_value);
+
+  const uint32_t channels = tensor->channels();
+  for (uint32_t channel = 0; channel < channels; ++channel) {
+    const arma::fmat &in_channel = tensor->slice(channel);
+    arma::fmat &output_channel = output->slice(channel);
+    const uint32_t in_channel_width = in_channel.n_cols;
+    const uint32_t in_channel_height = in_channel.n_rows;
+
+    for (uint32_t w = 0; w < in_channel_width; ++w) {
+      float *output_channel_ptr =
+          const_cast<float *>(output_channel.colptr(w + pad_cols1));
+      const float *in_channel_ptr = in_channel.colptr(w);
+      for (uint32_t h = 0; h < in_channel_height; ++h) {
+        const float value = *(in_channel_ptr + h);
+        *(output_channel_ptr + h + pad_rows1) = value;
+      }
+    }
+  }
+  return output;
+}
+
+std::tuple<sftensor, sftensor> TensorBroadcast(const sftensor &s1,
+                                               const sftensor &s2) {
+  CHECK(s1 != nullptr && s2 != nullptr);
+  if (s1->shapes() == s2->shapes()) {
+    return {s1, s2};
+  } else {
+    CHECK(s1->channels() == s2->channels());
+    if (s2->rows() == 1 && s2->cols() == 1) {
+      sftensor s2_ = TensorCreate(s2->channels(), s1->rows(), s1->cols());
+      CHECK(s2->size() == s2->channels());
+      for (uint32_t c = 0; c < s2->channels(); ++c) {
+        s2_->slice(c).fill(s2->index(c));
+      }
+      return {s1, s2_};
+    } else if (s1->rows() == 1 && s1->cols() == 1) {
+      sftensor s1_ = TensorCreate(s1->channels(), s2->rows(), s2->cols());
+      CHECK(s1->size() == s1->channels());
+      for (uint32_t c = 0; c < s1->channels(); ++c) {
+        s1_->slice(c).fill(s1->index(c));
+      }
+      return {s1_, s2};
+    } else {
+      LOG(FATAL) << "Broadcast shape is not adapting!";
+      return {s1, s2};
+    }
+  }
+}
+
 } // namespace kuiper_infer
