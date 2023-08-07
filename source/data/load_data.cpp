@@ -1,13 +1,11 @@
-//
-// Created by fss on 22-12-19.
-//
 #include "data/load_data.hpp"
 #include <glog/logging.h>
 
 namespace kuiper_infer {
-std::shared_ptr<Tensor<float >> CSVDataLoader::LoadDataWithHeader(const std::string &file_path,
-                                                                  std::vector<std::string> &headers,
-                                                                  char split_char) {
+std::shared_ptr<Tensor<float>>
+CSVDataLoader::LoadDataWithHeader(const std::string &file_path,
+                                  std::vector<std::string> &headers,
+                                  char split_char) {
   CHECK(!file_path.empty()) << "File path is empty!";
   std::ifstream in(file_path);
   CHECK(in.is_open() && in.good()) << "File open failed! " << file_path;
@@ -20,8 +18,9 @@ std::shared_ptr<Tensor<float >> CSVDataLoader::LoadDataWithHeader(const std::str
   headers.resize(cols);
   CHECK(rows >= 1);
   //表头占一行,rows-1
-  std::shared_ptr<Tensor<float>> input_tensor = std::make_shared<Tensor<float>>(1, rows - 1, cols);
-  arma::fmat &data = input_tensor->at(0);
+  std::shared_ptr<Tensor<float>> input_tensor =
+      std::make_shared<Tensor<float>>(1, rows - 1, cols);
+  arma::fmat &data = input_tensor->slice(0);
 
   size_t row = 0;
   while (in.good()) {
@@ -38,17 +37,16 @@ std::shared_ptr<Tensor<float >> CSVDataLoader::LoadDataWithHeader(const std::str
     while (line_stream.good()) {
       std::getline(line_stream, token, split_char);
       try {
-        //todo 补充
+        // todo 补充
         // 能够读取到第一行的csv列名，并存放在headers中
-        if(row == 0) {
+        if (row == 0) {
           headers.at(col) = token;
         }
         // 能够读取到第二行之后的csv数据，并相应放置在data变量的row，col位置中
         else {
-          data.at(row-1,col) = std::stof(token);
+          data.at(row - 1, col) = std::stof(token);
         }
-      }
-      catch (std::exception &e) {
+      } catch (std::exception &e) {
         LOG(ERROR) << "Parse CSV File meet error: " << e.what();
         continue;
       }
@@ -62,7 +60,8 @@ std::shared_ptr<Tensor<float >> CSVDataLoader::LoadDataWithHeader(const std::str
   return input_tensor;
 }
 
-std::shared_ptr<Tensor<float >> CSVDataLoader::LoadData(const std::string &file_path, char split_char) {
+std::shared_ptr<Tensor<float>>
+CSVDataLoader::LoadData(const std::string &file_path, char split_char) {
   CHECK(!file_path.empty()) << "File path is empty!";
   std::ifstream in(file_path);
   CHECK(in.is_open() && in.good()) << "File open failed! " << file_path;
@@ -71,8 +70,9 @@ std::shared_ptr<Tensor<float >> CSVDataLoader::LoadData(const std::string &file_
   std::stringstream line_stream;
 
   const auto &[rows, cols] = CSVDataLoader::GetMatrixSize(in, split_char);
-  std::shared_ptr<Tensor<float>> input_tensor = std::make_shared<Tensor<float>>(1, rows, cols);
-  arma::fmat &data = input_tensor->at(0);
+  std::shared_ptr<Tensor<float>> input_tensor =
+      std::make_shared<Tensor<float>>(1, rows, cols);
+  arma::fmat &data = input_tensor->slice(0);
 
   size_t row = 0;
   while (in.good()) {
@@ -90,8 +90,7 @@ std::shared_ptr<Tensor<float >> CSVDataLoader::LoadData(const std::string &file_
       std::getline(line_stream, token, split_char);
       try {
         data.at(row, col) = std::stof(token);
-      }
-      catch (std::exception &e) {
+      } catch (std::exception &e) {
         LOG(ERROR) << "Parse CSV File meet error: " << e.what();
         continue;
       }
@@ -105,7 +104,8 @@ std::shared_ptr<Tensor<float >> CSVDataLoader::LoadData(const std::string &file_
   return input_tensor;
 }
 
-std::pair<size_t, size_t> CSVDataLoader::GetMatrixSize(std::ifstream &file, char split_char) {
+std::pair<size_t, size_t> CSVDataLoader::GetMatrixSize(std::ifstream &file,
+                                                       char split_char) {
   bool load_ok = file.good();
   file.clear();
   size_t fn_rows = 0;
@@ -139,6 +139,7 @@ std::pair<size_t, size_t> CSVDataLoader::GetMatrixSize(std::ifstream &file, char
   }
   file.clear();
   file.seekg(start_pos);
-  return {fn_rows, fn_cols};
+  std::pair<size_t, size_t> msize(fn_rows, fn_cols);
+  return msize;
 }
-}
+} // namespace kuiper_infer
