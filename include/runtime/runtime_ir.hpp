@@ -75,7 +75,11 @@ public:
    * @return 返回权重文件
    */
   const std::string &bin_path() const;
-
+  /**
+   * @brief 返回当前图中的算子
+   * @return 算子的集合
+   */
+  const std::vector<std::shared_ptr<RuntimeOperator>> operators() const;
   /**
    * 计算图的执行,根据广度优先搜索的顺序执行
    * @param inputs 计算图的输入张量

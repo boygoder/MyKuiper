@@ -33,8 +33,8 @@
 
 //   // 校验conv1
 //   // operand name: pnnx_input_0 operand shape: 2 3 128 128
-//   // 所以我们在下方要求size=2（也就是batch等于2） 通道c=3 rows = 128 cols =
-//   128 const auto &conv1 = *operators3.begin(); const auto
+//   // 所以我们在下方要求size=2（也就是batch等于2） 通道c=3 rows = 128 cols
+//   =128 const auto &conv1 = *operators3.begin(); const auto
 //   &conv1_input_operand = conv1->input_operands;
 //   ASSERT_EQ(conv1_input_operand.find("pnnx_input_0")->second->datas.size(),
 //   2); const std::vector<std::shared_ptr<Tensor<float>>> &datas_conv1 =
@@ -58,42 +58,42 @@
 //   }
 // }
 
-// TEST(test_initinoutput, init_init_graph) {
-//   using namespace kuiper_infer;
-//   const std::string &param_path = "../tmp/test.pnnx.param";
-//   const std::string &bin_path = "../tmp/test.pnnx.bin";
-//   RuntimeGraph graph(param_path, bin_path);
-//   graph.Build("pnnx_input_0", "pnnx_output_0");
-//   const auto &operators = graph.operators();
-//   for (const auto &op : operators) {
-//     LOG(INFO) << "type: " << op->type << " name: " << op->name;
-//   }
-//   // 按照这里的关系我们可以知道conv1后面是pnnx_expr_0
-//   // conv2 后面是Pnnx...
-//   // pnnx后面是max
-//   // max后面是output
-//   const auto &conv1 = *(operators.begin() + 1);
-//   ASSERT_EQ(conv1->name, "conv1");
-//   ASSERT_EQ(conv1->output_operators.size(), 1);
-//   const auto &conv1_output_ops = conv1->output_operators;
-//   ASSERT_EQ(conv1_output_ops.size(), 1);
-//   ASSERT_NE(conv1_output_ops.find("pnnx_expr_0"), conv1_output_ops.end());
+TEST(test_initinoutput, init_init_graph) {
+  using namespace kuiper_infer;
+  const std::string &param_path = "../tmp/test.pnnx.param";
+  const std::string &bin_path = "../tmp/test.pnnx.bin";
+  RuntimeGraph graph(param_path, bin_path);
+  graph.Build("pnnx_input_0", "pnnx_output_0");
+  const auto &operators = graph.operators();
+  for (const auto &op : operators) {
+    LOG(INFO) << "type: " << op->type << " name: " << op->name;
+  }
+  // 按照这里的关系我们可以知道conv1后面是pnnx_expr_0
+  // conv2 后面是Pnnx...
+  // pnnx后面是max
+  // max后面是output
+  const auto &conv1 = *(operators.begin() + 1);
+  ASSERT_EQ(conv1->name, "conv1");
+  ASSERT_EQ(conv1->output_operators.size(), 1);
+  const auto &conv1_output_ops = conv1->output_operators;
+  ASSERT_EQ(conv1_output_ops.size(), 1);
+  ASSERT_NE(conv1_output_ops.find("pnnx_expr_0"), conv1_output_ops.end());
 
-//   const auto &conv2 = *(operators.begin() + 2);
-//   ASSERT_EQ(conv2->name, "conv2");
-//   ASSERT_EQ(conv2->output_operators.size(), 1);
-//   const auto &conv2_output_ops = conv2->output_operators;
-//   ASSERT_EQ(conv2_output_ops.size(), 1);
-//   ASSERT_NE(conv2_output_ops.find("pnnx_expr_0"), conv1_output_ops.end());
+  const auto &conv2 = *(operators.begin() + 2);
+  ASSERT_EQ(conv2->name, "conv2");
+  ASSERT_EQ(conv2->output_operators.size(), 1);
+  const auto &conv2_output_ops = conv2->output_operators;
+  ASSERT_EQ(conv2_output_ops.size(), 1);
+  ASSERT_NE(conv2_output_ops.find("pnnx_expr_0"), conv1_output_ops.end());
 
-//   // 现在验证的是pnnx_expr层 它的输出节点为Max
-//   const auto &pnnx_expr = *(operators.begin() + 3);
-//   ASSERT_EQ(pnnx_expr->name, "pnnx_expr_0");
-//   ASSERT_EQ(pnnx_expr->output_operators.size(), 1);
-//   const auto &pnnx_expr_output_ops = pnnx_expr->output_operators;
-//   ASSERT_EQ(pnnx_expr_output_ops.size(), 1);
-//   ASSERT_NE(pnnx_expr_output_ops.find("max"), conv1_output_ops.end());
-// }
+  // 现在验证的是pnnx_expr层 它的输出节点为Max
+  const auto &pnnx_expr = *(operators.begin() + 3);
+  ASSERT_EQ(pnnx_expr->name, "pnnx_expr_0");
+  ASSERT_EQ(pnnx_expr->output_operators.size(), 1);
+  const auto &pnnx_expr_output_ops = pnnx_expr->output_operators;
+  ASSERT_EQ(pnnx_expr_output_ops.size(), 1);
+  ASSERT_NE(pnnx_expr_output_ops.find("max"), conv1_output_ops.end());
+}
 
 // TEST(test_initinoutput, init_init_out) {
 //   using namespace kuiper_infer;

@@ -25,6 +25,11 @@ const std::string &RuntimeGraph::param_path() const {
 
 const std::string &RuntimeGraph::bin_path() const { return this->bin_path_; }
 
+const std::vector<std::shared_ptr<RuntimeOperator>>
+RuntimeGraph::operators() const {
+  return this->operators_;
+};
+
 bool RuntimeGraph::Init() {
   if (this->bin_path_.empty() || this->param_path_.empty()) {
     LOG(ERROR) << "The bin path or param path is empty";
@@ -332,7 +337,7 @@ RuntimeGraph::Forward(const std::vector<std::shared_ptr<Tensor<float>>> &inputs,
     operator_queue.pop_front();
 
     if (!current_op || current_op == output_op) {
-      if (debug){
+      if (debug) {
         LOG(INFO) << "Model Inference End";
       }
       break;

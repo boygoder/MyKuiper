@@ -1,6 +1,6 @@
 #include "relu.hpp"
 #include "layer/abstract/layer_factory.hpp"
-
+#include <omp.h>
 namespace kuiper_infer {
 InferStatus
 ReluLayer::Forward(const std::vector<std::shared_ptr<Tensor<float>>> &inputs,
