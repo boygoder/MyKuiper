@@ -145,9 +145,17 @@ void YoloDemo(const std::vector<std::string> &image_paths,
   RuntimeGraph graph(param_path, bin_path);
   graph.Build("pnnx_input_0", "pnnx_output_0");
 
-  std::vector<std::shared_ptr<Tensor<float>>> outputs =
-      graph.Forward(inputs, true);
-
+  std::vector<std::shared_ptr<Tensor<float>>> outputs;
+  uint32_t run_times = 1;
+  const auto &forward_start = std::chrono::steady_clock::now();
+  for (int j = 0; j < run_times; ++j) {
+    outputs = graph.Forward(inputs, true);
+  }
+  const double forward_duration =
+      std::chrono::duration_cast<std::chrono::duration<double>>(
+          std::chrono::steady_clock::now() - forward_start)
+          .count();
+  LOG(INFO) << "Forward time cost: " << forward_duration / run_times << " s";
   assert(outputs.size() == inputs.size());
   assert(outputs.size() == batch_size);
 

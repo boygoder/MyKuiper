@@ -76,43 +76,75 @@ TEST(test_model, resnet) {
   }
 }
 
-TEST(test_model, resnet_classify_demo) {
+void ResNetDemo(const std::vector<std::string> &image_paths,
+                const std::string &param_path, const std::string &bin_path,
+                const uint32_t batch_size) {
   using namespace kuiper_infer;
-  std::string path = "../tmp/dog.jpg";
-  cv::Mat image = cv::imread(path);
-  // 图像预处理
-  sftensor input = PreProcessImage(image);
-
-  std::vector<sftensor> inputs;
-  inputs.push_back(input);
-
-  const std::string &param_path = "../tmp/resnet18_batch1.pnnx.param";
-  const std::string &weight_path = "../tmp/resnet18_batch1.pnnx.bin";
-  RuntimeGraph graph(param_path, weight_path);
+  std::map<std::string, double> run_duration_infos; //运行时间统计
+  RuntimeGraph graph(param_path, bin_path);
   graph.Build("pnnx_input_0", "pnnx_output_0");
+  for (int i = 0; i < image_paths.size(); ++i) {
+    std::string path = image_paths.at(i);
+    cv::Mat image = cv::imread(path);
+    // 图像预处理
+    const auto &preprocess_start = std::chrono::steady_clock::now();
+    sftensor input = PreProcessImage(image);
+    const double preprocess_duration =
+        std::chrono::duration_cast<std::chrono::duration<double>>(
+            std::chrono::steady_clock::now() - preprocess_start)
+            .count();
+    LOG(INFO) << "Preprocess time cost: " << preprocess_duration << " s";
+    std::vector<sftensor> inputs;
+    inputs.push_back(input);
 
-  // 推理
-  const std::vector<sftensor> outputs = graph.Forward(inputs, true);
-  const uint32_t batch_size = 1;
-  // softmax
-  std::vector<sftensor> outputs_softmax(batch_size);
-  SoftmaxLayer softmax_layer;
-  softmax_layer.Forward(outputs, outputs_softmax);
-  assert(outputs_softmax.size() == batch_size);
-
-  for (int i = 0; i < outputs_softmax.size(); ++i) {
-    const sftensor &output_tensor = outputs_softmax.at(i);
-    assert(output_tensor->size() == 1 * 1000);
-    // 找到类别概率最大的种类
-    float max_prob = -1;
-    int max_index = -1;
-    for (int j = 0; j < output_tensor->size(); ++j) {
-      float prob = output_tensor->index(j);
-      if (max_prob <= prob) {
-        max_prob = prob;
-        max_index = j;
-      }
+    // 推理100次，计算平均运行时间
+    const auto &forward_start = std::chrono::steady_clock::now();
+    u_int32_t run_times = 1;
+    std::vector<sftensor> outputs;
+    for (int j = 0; j < run_times; ++j) {
+      outputs = graph.Forward(inputs, true);
     }
-    printf("class with max prob is %f index %d\n", max_prob, max_index);
+    const double forward_duration =
+        std::chrono::duration_cast<std::chrono::duration<double>>(
+            std::chrono::steady_clock::now() - forward_start)
+            .count();
+    LOG(INFO) << "Forward time cost: " << forward_duration / run_times << " s";
+
+    // softmax
+    const auto &softmax_start = std::chrono::steady_clock::now();
+    std::vector<sftensor> outputs_softmax(batch_size);
+    SoftmaxLayer softmax_layer;
+    softmax_layer.Forward(outputs, outputs_softmax);
+    assert(outputs_softmax.size() == batch_size);
+    const double softmax_duration =
+        std::chrono::duration_cast<std::chrono::duration<double>>(
+            std::chrono::steady_clock::now() - softmax_start)
+            .count();
+    LOG(INFO) << "Softmax Layer time cost: " << softmax_duration << " s";
+
+    for (int i = 0; i < outputs_softmax.size(); ++i) {
+      const sftensor &output_tensor = outputs_softmax.at(i);
+      assert(output_tensor->size() == 1 * 1000);
+      // 找到类别概率最大的种类
+      float max_prob = -1;
+      int max_index = -1;
+      for (int j = 0; j < output_tensor->size(); ++j) {
+        float prob = output_tensor->index(j);
+        if (max_prob <= prob) {
+          max_prob = prob;
+          max_index = j;
+        }
+      }
+      printf("class with max prob is %f index %d\n", max_prob, max_index);
+    }
   }
+}
+
+TEST(test_model, resnet_demo) {
+  const uint32_t batch_size = 1;
+  const std::vector<std::string> image_paths{"../tmp/dog.jpg"};
+  const std::string &param_path = "../tmp/resnet18_batch1.pnnx.param";
+  const std::string &bin_path = "../tmp/resnet18_batch1.pnnx.bin";
+
+  ResNetDemo(image_paths, param_path, bin_path, batch_size);
 }

@@ -60,12 +60,16 @@ FlattenLayer::Forward(const std::vector<std::shared_ptr<Tensor<float>>> &inputs,
       memcpy(output->data().memptr(), input->data().memptr(),
              sizeof(float) * input->size());
     }
+    // channels,rows,cols
     if (start_dim == 0 && end_dim == 2) {
+      //展开三维
       output->ReRawView({elements_size});
     } else if (start_dim == 1 && end_dim == 2) {
+      //展开后两维
       uint32_t channels = input->channels();
       output->ReRawView({channels, elements_size});
     } else if (start_dim == 0 && end_dim == 1) {
+      //展开前两维
       uint32_t cols = input->cols();
       output->ReRawView({elements_size, cols});
     } else {
