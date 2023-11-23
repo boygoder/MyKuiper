@@ -32,11 +32,11 @@ C++实现深度学习推理框架。
 - MaxPooling ：最大池化层
 - Expression：抽象语法树，张量的逐向量相乘、相加。
 - Flatten：维度展平
-- ReLU：relu激活函数,$relu(x) = max(0,x)$
-- Linear：线性层，$y = Ax + b$
-- Softmax ：softmax激活函数,$softmax(x_{i}) = \dfrac{e^{x_{i}}}{\sum_{j=1}^{n} e^{x_{j}}}$
+- ReLU：relu激活函数, $relu(x) =\max(0,x)$
+- Linear：线性层， $y = Ax + b$
+- Softmax ：softmax激活函数, $softmax(x_{i}) = \dfrac{\exp(x_{i})}{\sum_{j=1}^{n} \exp(x_{j})}$
 - Upsample ：上采样层，将输入放大scale倍，具体实现为最近邻插值。
-- SiLU ：silu激活函数，$silu(x) = \dfrac{x}{e^{-x}+1}$
+- SiLU ：silu激活函数， $silu(x) = \dfrac{x}{\exp(-x)+1}$
 - Concat：张量拼接层
 
   
